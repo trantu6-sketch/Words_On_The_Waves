@@ -12,6 +12,7 @@ namespace WordsOnTheWaves.FSM
         public CargoState CargoState { get; private set; }
         public PreparationState PreparationState { get; private set; }
         public ServiceState ServiceState { get; private set; }
+        public IdleState IdleState { get; private set; }
 
         private void Awake()
         {
@@ -31,6 +32,7 @@ namespace WordsOnTheWaves.FSM
             CargoState = new CargoState(this);
             PreparationState = new PreparationState(this);
             ServiceState = new ServiceState(this);
+            IdleState = new IdleState(this);
         }
 
         private void Start()

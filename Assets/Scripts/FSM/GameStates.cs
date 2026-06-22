@@ -58,4 +58,18 @@ namespace WordsOnTheWaves.FSM
             }
         }
     }
+
+    public class IdleState : GameState
+    {
+        public IdleState(GameStateMachine stateMachine) : base(stateMachine) { }
+
+        public override void Enter()
+        {
+            Debug.Log("FSM: Entered Gameplay (Idle) State - HUD is active");
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.CloseAllScreens();
+            }
+        }
+    }
 }
