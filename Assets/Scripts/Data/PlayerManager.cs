@@ -14,15 +14,8 @@ namespace WordsOnTheWaves.Data
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            Instance = this;
+            CurrentCash = PlayerPrefs.GetFloat("PlayerCash", 500f);
         }
 
         public bool SpendCash(float amount)
@@ -30,6 +23,7 @@ namespace WordsOnTheWaves.Data
             if (CurrentCash >= amount)
             {
                 CurrentCash -= amount;
+                PlayerPrefs.SetFloat("PlayerCash", CurrentCash);
                 cashChangedEvent?.Invoke(CurrentCash);
                 Debug.Log($"Tiêu {amount} xu. Còn lại: {CurrentCash}");
                 return true;
@@ -41,6 +35,7 @@ namespace WordsOnTheWaves.Data
         public void AddCash(float amount)
         {
             CurrentCash += amount;
+            PlayerPrefs.SetFloat("PlayerCash", CurrentCash);
             cashChangedEvent?.Invoke(CurrentCash);
             Debug.Log($"Kiếm được {amount} xu. Tổng: {CurrentCash}");
         }

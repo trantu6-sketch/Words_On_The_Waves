@@ -32,7 +32,9 @@ namespace WordsOnTheWaves.Data
         {
             foreach (BookGenre genre in System.Enum.GetValues(typeof(BookGenre)))
             {
-                _bookStorage[genre] = 0;
+                // Load từ PlayerPrefs. Nếu chưa từng chơi, cho ngẫu nhiên 7-10 cuốn
+                int defaultValue = Random.Range(7, 11);
+                _bookStorage[genre] = PlayerPrefs.GetInt("BookCount_" + genre.ToString(), defaultValue);
             }
         }
 
@@ -41,6 +43,7 @@ namespace WordsOnTheWaves.Data
             if (_bookStorage.ContainsKey(genre))
             {
                 _bookStorage[genre] += amount;
+                PlayerPrefs.SetInt("BookCount_" + genre.ToString(), _bookStorage[genre]);
                 inventoryChangedEvent?.Invoke();
                 Debug.Log($"Nhập {amount} cuốn {genre}. Tồn kho: {_bookStorage[genre]}");
             }
@@ -51,6 +54,7 @@ namespace WordsOnTheWaves.Data
             if (_bookStorage.ContainsKey(genre) && _bookStorage[genre] >= amount)
             {
                 _bookStorage[genre] -= amount;
+                PlayerPrefs.SetInt("BookCount_" + genre.ToString(), _bookStorage[genre]);
                 inventoryChangedEvent?.Invoke();
                 return true;
             }

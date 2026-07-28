@@ -14,7 +14,7 @@ namespace WordsOnTheWaves.Gameplay
         [Header("Tinh chỉnh vị trí lúc thả xuống kệ")]
         public Vector3 snapOffset = new Vector3(0, 0, 0); // Thay đổi y để nâng/hạ sách
 
-        private ShelfSlot currentSlot;
+        public ShelfSlot currentSlot;
         private Collider myCollider;
 
         private void Awake()
@@ -50,41 +50,50 @@ namespace WordsOnTheWaves.Gameplay
             if (slot != null && !slot.isOccupied)
             {
                 currentSlot = slot;
-                slot.PlaceBook(genre);
+                slot.PlaceBook(genre, this);
 
-                // --- BƯỚC 1: TÌM MẶT ĐÁY CỦA Ô KỆ (SHELF SLOT) ---
-                // Thay vì lấy điểm giữa lơ lửng của ô kệ, ta sẽ lấy mặt đáy thấp nhất của nó (chạm gỗ)
-                Vector3 targetPos = slot.transform.position;
-                BoxCollider slotBox = slot.GetComponent<BoxCollider>();
-                if (slotBox != null)
+                Vector3 basePos = slot.transform.position;
+                if (slot.TryGetComponent<BoxCollider>(out BoxCollider slotBox))
                 {
-                    targetPos.y = slotBox.bounds.min.y; 
+                    basePos.y = slotBox.bounds.min.y;
                 }
-                targetPos += snapOffset;
-                
-                // --- BƯỚC 2: TÍNH BÙ TRỪ PIVOT CỦA CUỐN SÁCH ---
+                basePos += snapOffset;
+
+                Quaternion targetRot = slot.transform.rotation;
+
+                // Đưa tạm sách về vị trí sàn kệ để đo va chạm chính xác 100%
+                Vector3 oldPos = transform.position;
+                Quaternion oldRot = transform.rotation;
+                transform.position = basePos;
+                transform.rotation = targetRot;
+
+                Vector3 finalPos = basePos;
+
                 if (myCollider is BoxCollider box)
                 {
-                    float minWorldY = float.MaxValue;
+                    float minProjection = float.MaxValue;
                     Vector3 extents = box.size / 2f;
-                    
-                    for(int i = 0; i < 8; i++) 
+                    for (int i = 0; i < 8; i++)
                     {
                         Vector3 localCorner = box.center;
                         localCorner.x += ((i & 1) == 0) ? extents.x : -extents.x;
                         localCorner.y += ((i & 2) == 0) ? extents.y : -extents.y;
                         localCorner.z += ((i & 4) == 0) ? extents.z : -extents.z;
-                        
                         Vector3 worldCorner = transform.TransformPoint(localCorner);
-                        if(worldCorner.y < minWorldY) minWorldY = worldCorner.y;
+
+                        float projection = Vector3.Dot(worldCorner - basePos, slot.transform.up);
+                        if (projection < minProjection) minProjection = projection;
                     }
-                    
-                    float pivotToBottom = transform.position.y - minWorldY;
-                    targetPos.y += pivotToBottom; // Nâng cuốn sách lên để mặt đáy sách vừa khít mặt đáy kệ
+
+                    finalPos -= slot.transform.up * minProjection;
                 }
 
+                transform.position = oldPos;
+                transform.rotation = oldRot;
+
                 transform.DOKill();
-                transform.DOMove(targetPos, 0.2f).SetEase(Ease.OutQuad);
+                transform.DOMove(finalPos, 0.2f).SetEase(Ease.OutQuad);
+                transform.DORotateQuaternion(targetRot, 0.2f);
                 
                 // Animation đàn hồi
                 Sequence seq = DOTween.Sequence();

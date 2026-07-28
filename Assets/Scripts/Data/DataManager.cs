@@ -10,16 +10,8 @@ namespace WordsOnTheWaves.Data
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-                LoadData();
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            Instance = this;
+            LoadData();
         }
 
         private void LoadData()

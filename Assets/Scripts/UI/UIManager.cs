@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening; // Yêu cầu phải có DOTween trong dự án
+using System.Collections;
 
 namespace WordsOnTheWaves.UI
 {
@@ -25,6 +26,7 @@ namespace WordsOnTheWaves.UI
         public Button menuButton;
         public Button cargoButton;
         public Button preparationButton;
+        public Button decorButton;
         public Button serviceButton;
         
         [Header("--- Close Buttons ---")]
@@ -34,35 +36,27 @@ namespace WordsOnTheWaves.UI
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
-        }
+            Instance = this;
 
-        private void Start()
-        {
-            // Cache original positions and scales
             foreach (var screen in screens)
             {
                 if (screen.screenObj != null)
                 {
                     RectTransform rect = screen.screenObj.GetComponent<RectTransform>();
                     screen.originalWorldPos = rect.position;
-                    screen.originalScale = rect.localScale;
+                    screen.originalScale = Vector3.one; // Ép cứng luôn bằng 1 để không bao giờ bị dính lỗi thu nhỏ về 0
                     screen.screenObj.SetActive(false); // Ẩn mặc định ban đầu
                 }
             }
+        }
 
+        private void Start()
+        {
             // Register button clicks to FSM State Changes
             if (menuButton != null) menuButton.onClick.AddListener(OnGameplayButtonClicked);
             if (cargoButton != null) cargoButton.onClick.AddListener(OnCargoButtonClicked);
             if (preparationButton != null) preparationButton.onClick.AddListener(OnPreparationButtonClicked);
+            if (decorButton != null) decorButton.onClick.AddListener(OnDecorButtonClicked);
             if (serviceButton != null) serviceButton.onClick.AddListener(OnServiceButtonClicked);
             
             // Register multiple close buttons
@@ -77,7 +71,8 @@ namespace WordsOnTheWaves.UI
 
         public void OnGameplayButtonClicked()
         {
-            WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.IdleState);
+            // Từ màn hình Intro, nhấn Play để vào màn hình Map
+            WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.MapState);
         }
 
         public void OnCargoButtonClicked()
@@ -90,6 +85,11 @@ namespace WordsOnTheWaves.UI
             WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.PreparationState);
         }
 
+        public void OnDecorButtonClicked()
+        {
+            WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.DecorState);
+        }
+
         public void OnServiceButtonClicked()
         {
             WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.ServiceState);
@@ -97,7 +97,8 @@ namespace WordsOnTheWaves.UI
 
         public void OnCloseButtonClicked()
         {
-            WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.IdleState);
+            // Đưa về màn hình Map (chính) và kéo Camera trở lại
+            WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.MapState);
         }
 
         public void CloseAllScreens()
@@ -126,9 +127,15 @@ namespace WordsOnTheWaves.UI
 
         public void ShowScreen(string screenName)
         {
-            if (currentScreen == screenName) return;
+            Debug.Log($"UIManager: Yêu cầu mở UI -> {screenName}");
+            if (currentScreen == screenName) 
+            {
+                Debug.Log($"UIManager: UI {screenName} đang mở sẵn rồi, bỏ qua!");
+                return;
+            }
             currentScreen = screenName;
 
+            bool found = false;
             foreach (var screen in screens)
             {
                 if (screen.screenObj != null)
@@ -137,6 +144,8 @@ namespace WordsOnTheWaves.UI
 
                     if (screen.screenName == screenName)
                     {
+                        found = true;
+                        Debug.Log($"UIManager: Đã tìm thấy UI {screenName} trong danh sách, tiến hành BẬT (SetActive = true)");
                         screen.screenObj.SetActive(true);
                         
                         if (screen.originButtonRect != null)
@@ -149,6 +158,13 @@ namespace WordsOnTheWaves.UI
                             // Phóng to và di chuyển ra giữa màn hình
                             panelRect.DOMove(screen.originalWorldPos, 0.4f).SetEase(Ease.OutBack);
                             panelRect.DOScale(screen.originalScale, 0.4f).SetEase(Ease.OutBack);
+                        }
+                        else
+                        {
+                            // Reset lại scale và vị trí về mặc định (chống kẹt scale = 0)
+                            panelRect.DOKill();
+                            panelRect.position = screen.originalWorldPos;
+                            panelRect.localScale = screen.originalScale;
                         }
                     }
                     else

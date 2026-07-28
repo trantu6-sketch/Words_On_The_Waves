@@ -8,6 +8,9 @@ namespace WordsOnTheWaves.Gameplay
     {
         public static DragManager Instance { get; private set; }
         
+        [Header("Trạng thái Hoạt động (Bật bởi FSM)")]
+        public bool isActive = false;
+
         [System.Serializable]
         public struct BookPrefabMapping
         {
@@ -35,8 +38,85 @@ namespace WordsOnTheWaves.Gameplay
             else Destroy(gameObject);
         }
 
+        private void Start()
+        {
+            LoadBooksFromSave();
+        }
+
+        public void LoadBooksFromSave()
+        {
+            var savedMap = BookPlacementSaveSystem.LoadPlacement();
+            if (savedMap == null || savedMap.Count == 0) return;
+
+            ShelfSlot[] allSlots = FindObjectsByType<ShelfSlot>(FindObjectsSortMode.None);
+            foreach (var slot in allSlots)
+            {
+                if (!slot.isServiceShelf && !string.IsNullOrEmpty(slot.slotID) && savedMap.ContainsKey(slot.slotID))
+                {
+                    BookGenre genre = savedMap[slot.slotID];
+                    ForceSpawnOnShelf(slot, genre);
+                }
+            }
+        }
+
+        public void ForceSpawnOnShelf(ShelfSlot slot, BookGenre genre)
+        {
+            GameObject prefabToSpawn = null;
+            foreach (var mapping in bookPrefabs)
+            {
+                if (mapping.genre == genre && mapping.prefabs != null && mapping.prefabs.Count > 0)
+                {
+                    prefabToSpawn = mapping.prefabs[0];
+                    break;
+                }
+            }
+
+            if (prefabToSpawn == null) return;
+
+            Vector3 basePos = slot.transform.position;
+            if (slot.TryGetComponent<BoxCollider>(out BoxCollider slotBox))
+            {
+                basePos.y = slotBox.bounds.min.y;
+            }
+
+            Quaternion targetRot = slot.transform.rotation;
+
+            GameObject newBook = Instantiate(prefabToSpawn, basePos, targetRot);
+            DraggableItem item = newBook.GetComponent<DraggableItem>();
+            item.genre = genre;
+            item.currentSlot = slot;
+
+            if (newBook.TryGetComponent<BoxCollider>(out BoxCollider box))
+            {
+                float minProjection = float.MaxValue;
+                Vector3 extents = box.size / 2f;
+                for (int i = 0; i < 8; i++)
+                {
+                    Vector3 localCorner = box.center;
+                    localCorner.x += ((i & 1) == 0) ? extents.x : -extents.x;
+                    localCorner.y += ((i & 2) == 0) ? extents.y : -extents.y;
+                    localCorner.z += ((i & 4) == 0) ? extents.z : -extents.z;
+                    Vector3 worldCorner = newBook.transform.TransformPoint(localCorner);
+
+                    float projection = Vector3.Dot(worldCorner - basePos, slot.transform.up);
+                    if (projection < minProjection) minProjection = projection;
+                }
+
+                newBook.transform.position -= slot.transform.up * minProjection;
+            }
+
+            slot.PlaceBook(genre, item);
+        }
+
         private void Update()
         {
+            if (!isActive) return;
+
+            if (Camera.main == null)
+            {
+                Debug.LogError("DragManager: LỖI - Camera trong Scene mới chưa được gắn Tag là 'MainCamera'!");
+                return;
+            }
             HandleInput();
         }
 
@@ -109,14 +189,37 @@ namespace WordsOnTheWaves.Gameplay
                 
                 currentlyDragging = null;
             }
+
+            // 4. Click chuột phải vào sách trên kệ: Hoàn trả vào kho
+            if (Input.GetMouseButtonDown(1))
+            {
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                if (Physics.Raycast(ray, out RaycastHit hit, 100f, draggableLayer))
+                {
+                    DraggableItem item = hit.collider.GetComponent<DraggableItem>();
+                    if (item != null && item.currentSlot != null)
+                    {
+                        item.currentSlot.ReturnBookToStorage();
+                    }
+                }
+            }
         }
 
         // Gọi hàm này từ UI Event Trigger (PointerDown)
         public void SpawnBookFromUI(string genreString)
         {
+            if (!isActive) return;
+            
+            Debug.Log($"DragManager: Nhận lệnh tạo sách thể loại '{genreString}' từ UI");
             if (System.Enum.TryParse(genreString, out BookGenre genre))
             {
-                if (InventoryManager.Instance.RemoveBook(genre, 1))
+                bool canSpawn = true;
+                if (InventoryManager.Instance != null)
+                {
+                    canSpawn = InventoryManager.Instance.RemoveBook(genre, 1);
+                }
+
+                if (canSpawn)
                 {
                     GameObject prefabToSpawn = null;
                     foreach (var mapping in bookPrefabs)
@@ -129,7 +232,11 @@ namespace WordsOnTheWaves.Gameplay
                         }
                     }
 
-                    if (prefabToSpawn == null) return;
+                    if (prefabToSpawn == null)
+                    {
+                        Debug.LogError($"DragManager: CHƯA GÁN PREFAB sách 3D cho thể loại '{genre}' trong Inspector!");
+                        return;
+                    }
 
                     Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
                     Vector3 spawnPos = ray.GetPoint(spawnDistanceFromCamera); 

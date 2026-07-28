@@ -9,36 +9,34 @@ namespace WordsOnTheWaves.FSM
         public GameState CurrentState { get; private set; }
 
         public MainMenuState MainMenuState { get; private set; }
+        public MapState MapState { get; private set; }
         public CargoState CargoState { get; private set; }
         public PreparationState PreparationState { get; private set; }
+        public DecorState DecorState { get; private set; }
         public ServiceState ServiceState { get; private set; }
         public IdleState IdleState { get; private set; }
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
-            }
-            else
-            {
-                Destroy(gameObject);
-                return;
-            }
+            Instance = this;
 
             // Initialize states
             MainMenuState = new MainMenuState(this);
+            MapState = new MapState(this);
             CargoState = new CargoState(this);
             PreparationState = new PreparationState(this);
+            DecorState = new DecorState(this);
             ServiceState = new ServiceState(this);
             IdleState = new IdleState(this);
         }
 
         private void Start()
         {
-            // Start at Main Menu
-            ChangeState(MainMenuState);
+            // Nếu không phải ở Scene Decor thì mới bắt đầu các luồng UI thông thường
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name != "Decor")
+            {
+                ChangeState(MainMenuState);
+            }
         }
 
         private void Update()
