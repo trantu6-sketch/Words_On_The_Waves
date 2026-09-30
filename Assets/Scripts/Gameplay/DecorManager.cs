@@ -41,7 +41,8 @@ namespace WordsOnTheWaves.Gameplay
             Instance = this;
             
             // Tự động nhận diện Scene để bật/tắt chế độ Editor (Tránh việc user quên check)
-            isEditorMode = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "Decor";
+            // Giờ gộp chung Scene nên mặc định là true để cho phép kéo thả
+            isEditorMode = true;
         }
 
         private void Start()
@@ -113,6 +114,24 @@ namespace WordsOnTheWaves.Gameplay
             Debug.Log($"DecorManager: Đã đồng bộ thành công {spawnedCount} món đồ trang trí lên xe ở Scene này!");
         }
 
+        public void ActivateDecorMode(bool on)
+        {
+            isActive = on;
+            UpdateSlotHighlights(on);
+        }
+
+        private void UpdateSlotHighlights(bool show)
+        {
+            if (allSlots == null) return;
+            foreach (var slot in allSlots)
+            {
+                if (slot != null && slot.highlightEffect != null)
+                {
+                    slot.highlightEffect.SetActive(show && !slot.isOccupied);
+                }
+            }
+        }
+
         private void ForceSpawnDecor(DecorSlot slot, string decorID)
         {
             foreach (var mapping in decorPrefabs)
@@ -181,8 +200,15 @@ namespace WordsOnTheWaves.Gameplay
 
             DecorSaveSystem.SaveDecor(currentSetup);
             
-            // Trở về Scene chính (giả sử tên là SampleScene)
-            SceneManager.LoadScene("SampleScene"); 
+            // Trở về Menu chính hoặc Map thông qua FSM
+            if (WordsOnTheWaves.FSM.GameStateMachine.Instance != null)
+            {
+                WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.MainMenuState);
+            }
+            else
+            {
+                SceneManager.LoadScene("SampleScene"); 
+            }
         }
 
         // Gọi từ UI khi người chơi bấm nút trang bị trong Inventory
@@ -276,6 +302,7 @@ namespace WordsOnTheWaves.Gameplay
                     {
                         if (!slot.isOccupied && slot.slotType == requiredType)
                         {
+                            if (slot.highlightEffect != null) slot.highlightEffect.SetActive(true);
                             slot.SetHighlight(false); // Gọi hàm mới với 1 tham số
                         }
                     }

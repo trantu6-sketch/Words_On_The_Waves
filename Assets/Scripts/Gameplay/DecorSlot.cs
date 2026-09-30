@@ -25,9 +25,9 @@ namespace WordsOnTheWaves.Gameplay
             {
                 originalHighlightScale = highlightEffect.transform.localScale;
                 
-                // Mặc định luôn hiện chấm trắng nếu đang ở màn hình Decor (Editor) và slot còn trống
-                bool isEditor = DecorManager.Instance != null && DecorManager.Instance.isEditorMode;
-                highlightEffect.SetActive(isEditor && !isOccupied);
+                // Trạng thái bật tắt phụ thuộc vào DecorManager hiện tại có đang isActive hay không
+                bool isDecorActive = DecorManager.Instance != null && DecorManager.Instance.isActive;
+                highlightEffect.SetActive(isDecorActive && !isOccupied);
             }
         }
 

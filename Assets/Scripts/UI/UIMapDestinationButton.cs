@@ -42,8 +42,21 @@ namespace WordsOnTheWaves.UI
                 PlayerPrefs.Save();
             }
 
-            Debug.Log($"UIMapDestinationButton: Đã chọn '{destinationId}' -> Đang mở Scene '{nextSceneName}'");
-            SceneManager.LoadScene(nextSceneName);
+            Debug.Log($"UIMapDestinationButton: Đã chọn '{destinationId}' -> Chuyển sang trạng thái '{nextSceneName}'");
+            
+            if (WordsOnTheWaves.FSM.GameStateMachine.Instance != null)
+            {
+                if (nextSceneName == "Preparation")
+                    WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.PreparationState);
+                else if (nextSceneName == "Service")
+                    WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.ServiceState);
+                else
+                    WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.PreparationState);
+            }
+            else
+            {
+                SceneManager.LoadScene(nextSceneName);
+            }
         }
     }
 }

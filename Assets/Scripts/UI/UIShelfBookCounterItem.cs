@@ -36,11 +36,19 @@ namespace WordsOnTheWaves.UI
 
             // Tìm tất cả các ShelfSlot đang có trong Scene
             ShelfSlot[] allSlots = FindObjectsByType<ShelfSlot>(FindObjectsSortMode.None);
+            System.Collections.Generic.HashSet<string> seenSlots = new System.Collections.Generic.HashSet<string>();
             
             int totalOnShelf = 0;
             foreach (var slot in allSlots)
             {
-                if (!slot.isServiceShelf && slot.isOccupied && slot.currentGenre == genreToCount)
+                // Bỏ qua nếu là kệ Service
+                if (slot.isServiceShelf) continue;
+                
+                // Bỏ qua nếu đã xử lý slot này rồi (hoặc là slot rác/bị destroy)
+                if (slot == null || seenSlots.Contains(slot.slotID)) continue;
+                seenSlots.Add(slot.slotID);
+
+                if (slot.isOccupied && slot.currentGenre == genreToCount)
                 {
                     totalOnShelf++;
                 }

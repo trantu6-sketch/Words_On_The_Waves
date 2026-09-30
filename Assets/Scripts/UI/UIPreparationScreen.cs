@@ -9,8 +9,11 @@ namespace WordsOnTheWaves.UI
 {
     public class UIPreparationScreen : MonoBehaviour
     {
-        [Header("Nút Let's Go!")]
+        [Header("Nút Let's Go! (Sẽ tự ẩn khi vào Service)")]
         public Button letsGoButton;
+
+        [Header("Khu vực chứa UI Kho sách (Sẽ tự ẩn khi vào Service)")]
+        public GameObject storageUIPanel;
 
         [Header("Tên Scene tiếp theo (Mặc định: Service)")]
         public string nextSceneName = "Service";
@@ -40,6 +43,14 @@ namespace WordsOnTheWaves.UI
 
             Debug.Log($"UIPreparationScreen: Đã chốt {currentSetup.Count} cuốn sách -> Bắt đầu bán hàng!");
             WordsOnTheWaves.FSM.GameStateMachine.Instance.ChangeState(WordsOnTheWaves.FSM.GameStateMachine.Instance.ServiceState);
+        }
+
+        public void SetServiceMode(bool isServiceMode)
+        {
+            // Nếu vào Service -> Ẩn Kho (Storage), Ẩn nút Let's Go
+            // Giữ nguyên các phần khác (như UI Shelf Counter, Back Button)
+            if (storageUIPanel != null) storageUIPanel.SetActive(!isServiceMode);
+            if (letsGoButton != null) letsGoButton.gameObject.SetActive(!isServiceMode);
         }
     }
 }

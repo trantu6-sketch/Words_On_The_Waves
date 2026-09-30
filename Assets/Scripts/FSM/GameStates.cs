@@ -67,6 +67,8 @@ namespace WordsOnTheWaves.FSM
                     if (GameStateMachine.Instance.CurrentState == this)
                     {
                         UIManager.Instance.ShowScreen("Preparation");
+                        var prepUI = Object.FindAnyObjectByType<UIPreparationScreen>(FindObjectsInactive.Include);
+                        if (prepUI != null) prepUI.SetServiceMode(false); // Bật mode Preparation
                         if (WordsOnTheWaves.Gameplay.DragManager.Instance != null) WordsOnTheWaves.Gameplay.DragManager.Instance.isActive = true;
                     }
                 });
@@ -96,7 +98,7 @@ namespace WordsOnTheWaves.FSM
                     if (GameStateMachine.Instance.CurrentState == this)
                     {
                         UIManager.Instance.ShowScreen("Decor");
-                        if (WordsOnTheWaves.Gameplay.DecorManager.Instance != null) WordsOnTheWaves.Gameplay.DecorManager.Instance.isActive = true;
+                        if (WordsOnTheWaves.Gameplay.DecorManager.Instance != null) WordsOnTheWaves.Gameplay.DecorManager.Instance.ActivateDecorMode(true);
                     }
                 });
             }
@@ -104,7 +106,7 @@ namespace WordsOnTheWaves.FSM
 
         public override void Exit()
         {
-            if (WordsOnTheWaves.Gameplay.DecorManager.Instance != null) WordsOnTheWaves.Gameplay.DecorManager.Instance.isActive = false;
+            if (WordsOnTheWaves.Gameplay.DecorManager.Instance != null) WordsOnTheWaves.Gameplay.DecorManager.Instance.ActivateDecorMode(false);
         }
     }
 
@@ -119,7 +121,9 @@ namespace WordsOnTheWaves.FSM
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.CloseAllScreens();
-                UIManager.Instance.ShowScreen("Service");
+                UIManager.Instance.ShowScreen("Preparation"); // Dùng chung UI với Preparation
+                var prepUI = Object.FindAnyObjectByType<UIPreparationScreen>(FindObjectsInactive.Include);
+                if (prepUI != null) prepUI.SetServiceMode(true); // Bật mode Service (Ẩn kho)
             }
             if (WordsOnTheWaves.Gameplay.CameraController.Instance != null) WordsOnTheWaves.Gameplay.CameraController.Instance.MoveToService();
         }

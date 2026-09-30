@@ -32,10 +32,15 @@ namespace WordsOnTheWaves.Gameplay
 
             ShelfSlot[] allSlots = FindObjectsByType<ShelfSlot>(FindObjectsSortMode.None);
             int spawnedCount = 0;
+            System.Collections.Generic.HashSet<string> seenSlots = new System.Collections.Generic.HashSet<string>();
 
             foreach (var slot in allSlots)
             {
-                if (slot.isServiceShelf && !string.IsNullOrEmpty(slot.slotID) && savedSetup.ContainsKey(slot.slotID))
+                if (!slot.isServiceShelf) continue;
+                if (slot == null || seenSlots.Contains(slot.slotID)) continue;
+                seenSlots.Add(slot.slotID);
+
+                if (!string.IsNullOrEmpty(slot.slotID) && savedSetup.ContainsKey(slot.slotID))
                 {
                     BookGenre genre = savedSetup[slot.slotID];
                     SpawnBookOnSlot(slot, genre);

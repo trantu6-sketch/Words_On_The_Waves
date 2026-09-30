@@ -26,7 +26,7 @@ namespace WordsOnTheWaves.Gameplay
         public LayerMask draggableLayer; // Layer cho sách 3D
 
         [Header("Khoảng cách rơi ra khi bốc từ UI")]
-        public float spawnDistanceFromCamera = 15f;
+        public float spawnDistanceFromCamera = 4f;
 
         private DraggableItem currentlyDragging;
         private ShelfSlot currentHoveredSlot;
@@ -49,9 +49,15 @@ namespace WordsOnTheWaves.Gameplay
             if (savedMap == null || savedMap.Count == 0) return;
 
             ShelfSlot[] allSlots = FindObjectsByType<ShelfSlot>(FindObjectsSortMode.None);
+            System.Collections.Generic.HashSet<string> seenSlots = new System.Collections.Generic.HashSet<string>();
+
             foreach (var slot in allSlots)
             {
-                if (!slot.isServiceShelf && !string.IsNullOrEmpty(slot.slotID) && savedMap.ContainsKey(slot.slotID))
+                if (slot.isServiceShelf) continue;
+                if (slot == null || seenSlots.Contains(slot.slotID)) continue;
+                seenSlots.Add(slot.slotID);
+
+                if (!string.IsNullOrEmpty(slot.slotID) && savedMap.ContainsKey(slot.slotID))
                 {
                     BookGenre genre = savedMap[slot.slotID];
                     ForceSpawnOnShelf(slot, genre);
